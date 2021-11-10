@@ -1,2 +1,5 @@
-# Poppinstack - MailApi
-Universal E-mail sending API interface which support cloud email sending providers are Sendgrid,Mailgun,Amazon SES, and Alibaba cloud DM Mail.It provide ease of Migration and configuration purpose.
+# Poppinstack - Mailtology
+Write one for multiple migration time.
+
+Mailtology is portal library that let us make migration easier when you try to switch mail-sending cloud provider.
+It support various cloud mail service are mailgun, sendgrid, amazon ses,and alibaba cloud dm.
