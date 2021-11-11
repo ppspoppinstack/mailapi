@@ -81,13 +81,10 @@ public class MailgunSenderImpl extends SenderAbstract<MailgunApiConfiguration> i
                 multipartBodyBuilder.addFormDataPart("attachment",fileName,attachmentBody);
             }
         }
-        if(isDebugEnabled){
-            logger.debug("TO : {} ",sendTo);
-            logger.debug("CC : {} ",cc);
-            logger.debug("BCC : {} ",bcc);
-            logger.debug("BODY : {} ",body);
-        }
-
+        logger.info("TO : {} ",sendTo);
+        logger.info("CC : {} ",cc);
+        logger.info("BCC : {} ",bcc);
+        logger.info("BODY : {} ",body);
         MultipartBody multipartBody = multipartBodyBuilder.build();
         requestBuilder.post(multipartBody);
         Request request = requestBuilder.build();
@@ -124,11 +121,9 @@ public class MailgunSenderImpl extends SenderAbstract<MailgunApiConfiguration> i
             sendMailResponse.setResponseCode(String.valueOf(responseCode));
             sendMailResponse.setResponseMessage(responseMessage);
         }
-        if(isDebugEnabled){
-            logger.debug("Response id : {} ",sendMailResponse.getId());
-            logger.debug("Response code : {} ",sendMailResponse.getResponseCode());
-            logger.debug("Response Message : {} ",sendMailResponse.getMessage());
-        }
+            logger.info("Response id : {} ",sendMailResponse.getId());
+            logger.info("Response code : {} ",sendMailResponse.getResponseCode());
+            logger.info("Response Message : {} ",sendMailResponse.getMessage());
         return sendMailResponse;
     }
 }
