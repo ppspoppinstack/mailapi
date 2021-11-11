@@ -85,10 +85,13 @@ public class MailgunSenderImpl extends SenderAbstract<MailgunApiConfiguration> i
         MailgunSendEmailResponse sendMailResponse = new MailgunSendEmailResponse();
         try(
                 Response response = okHttpClient.newCall(request).execute();
-                InputStream inputStream = response.body().byteStream()
+
+                //InputStream inputStream = response.body().byteStream()
         ){
+            byte[] responsByte = response.body().bytes();
+            logger.info("responsByte : {} ",new String(responsByte));
             int responseCode = response.code();
-            Map dataMap = (Map) mainDslJson.deserialize(LinkedHashMap.class,inputStream);
+            Map dataMap = (Map) mainDslJson.deserialize(LinkedHashMap.class,responsByte,responsByte.length);
             String responseId = (String) dataMap.get("id");
             String responseMessage = (String) dataMap.get("message");
             sendMailResponse.setId(responseId);
