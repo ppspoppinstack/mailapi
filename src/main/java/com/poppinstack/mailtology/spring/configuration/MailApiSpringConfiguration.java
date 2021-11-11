@@ -4,6 +4,7 @@ import com.dslplatform.json.DslJson;
 import com.dslplatform.json.runtime.Settings;
 import com.poppinstack.mailtology.configuration.MailApiConfiguration;
 import com.poppinstack.mailtology.configuration.MailgunApiConfiguration;
+import com.poppinstack.mailtology.constant.MAILGUN_DOMAIN_REGION;
 import com.poppinstack.mailtology.constant.MAIL_API_PROVIDER;
 import com.poppinstack.mailtology.instance.SpringMailApiInstance;
 import okhttp3.ConnectionPool;
@@ -32,6 +33,9 @@ public class MailApiSpringConfiguration {
 
     @Value("${mailtology.mailgun.domainName}")
     private String mailgunDomainName;
+
+    @Value("${mailtology.mailgun.region:us}")
+    private String mailgunRegion;
 
     @Value("${mailtology.pool.size:300}")
     private int mailApiPoolSize;
@@ -62,7 +66,9 @@ public class MailApiSpringConfiguration {
         MAIL_API_PROVIDER mail_api_provider = MAIL_API_PROVIDER.lookup(mailApiProvider);
         MailApiConfiguration mailApiConfiguration = null;
         if(MAIL_API_PROVIDER.MAILGUN.equals(mail_api_provider)){
+            MAILGUN_DOMAIN_REGION mailgun_domain_region = MAILGUN_DOMAIN_REGION.lookup(mailgunRegion);
             MailgunApiConfiguration mailgunApiConfiguration = new MailgunApiConfiguration();
+            mailgunApiConfiguration.setDomainRegion(mailgun_domain_region);
             mailgunApiConfiguration.setApiKey(mailgunApiKey);
             mailgunApiConfiguration.setDomainName(mailgunDomainName);
             mailApiConfiguration = mailgunApiConfiguration;

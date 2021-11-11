@@ -2,16 +2,20 @@ package com.poppinstack.mailtology.sender;
 
 import com.dslplatform.json.DslJson;
 import com.poppinstack.mailtology.configuration.MailgunApiConfiguration;
+import com.poppinstack.mailtology.constant.MAILGUN_DOMAIN_REGION;
 import com.poppinstack.mailtology.model.MailAttachment;
 import com.poppinstack.mailtology.model.MailParam;
 import com.poppinstack.mailtology.model.MailgunSendEmailResponse;
 import com.poppinstack.mailtology.model.SendMailResponse;
 import okhttp3.*;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +35,12 @@ public class MailgunSenderImpl extends SenderAbstract<MailgunApiConfiguration> i
         String domainName = mailApiConfiguration.getDomainName();
         String apiKey = mailApiConfiguration.getApiKey();
         StringBuilder requestUrlStringBuilder = new StringBuilder();
-        requestUrlStringBuilder.append("https://api.mailgun.net/v3/");
+        MAILGUN_DOMAIN_REGION mailgun_domain_region = mailApiConfiguration.getDomainRegion();
+        if(MAILGUN_DOMAIN_REGION.EU.equals(mailgun_domain_region)){
+            requestUrlStringBuilder.append("https://api.eu.mailgun.net/v3/");
+        }else if(MAILGUN_DOMAIN_REGION.US.equals(mailgun_domain_region)){
+            requestUrlStringBuilder.append("https://api.mailgun.net/v3/");
+        }
         requestUrlStringBuilder.append(domainName);
         requestUrlStringBuilder.append("/messages");
         String requestUrl = requestUrlStringBuilder.toString();
@@ -55,7 +64,7 @@ public class MailgunSenderImpl extends SenderAbstract<MailgunApiConfiguration> i
             String ccStr = StringUtils.join(cc,",");
             multipartBodyBuilder.addFormDataPart("cc",ccStr);
         }
-        List<String> bcc = mailParam.getCc();
+        List<String> bcc = mailParam.getBcc();
         if(CollectionUtils.isNotEmpty(bcc)){
             String bccStr = StringUtils.join(bcc,",");
             multipartBodyBuilder.addFormDataPart("bcc",bccStr);
@@ -85,15 +94,31 @@ public class MailgunSenderImpl extends SenderAbstract<MailgunApiConfiguration> i
         MailgunSendEmailResponse sendMailResponse = new MailgunSendEmailResponse();
         try(
                 Response response = okHttpClient.newCall(request).execute();
-
-                //InputStream inputStream = response.body().byteStream()
+                InputStream inputStream = response.body().byteStream()
         ){
-            byte[] responsByte = response.body().bytes();
-            logger.info("responsByte : {} ",new String(responsByte));
+            String contentType = response.header("Content-Type");
+            if(isDebugEnabled) {
+                logger.debug("contentType {} ", contentType);
+            }
+            Map dataMap = null;
             int responseCode = response.code();
-            Map dataMap = (Map) mainDslJson.deserialize(LinkedHashMap.class,responsByte,responsByte.length);
-            String responseId = (String) dataMap.get("id");
-            String responseMessage = (String) dataMap.get("message");
+            String responseId = "0";
+            String responseMessage = null;
+            if(StringUtils.contains("application/json",contentType)) {
+                dataMap = (Map) mainDslJson.deserialize(LinkedHashMap.class, inputStream);
+                responseId = (String) dataMap.get("id");
+                responseMessage = (String) dataMap.get("message");
+            }else if(StringUtils.contains("text/plain",contentType) || StringUtils.contains("text/html",contentType)) {
+                try(BufferedInputStream bis = new BufferedInputStream(inputStream);
+                    ByteArrayOutputStream buf = new ByteArrayOutputStream();){
+                    for (int result = bis.read(); result != -1; result = bis.read()) {
+                        buf.write((byte) result);
+                    }
+                    buf.flush();
+                    byte[] dataByte = buf.toByteArray();
+                    responseMessage = new String(dataByte,"utf8");
+                }
+            }
             sendMailResponse.setId(responseId);
             sendMailResponse.setMessage(responseMessage);
             sendMailResponse.setResponseCode(String.valueOf(responseCode));
